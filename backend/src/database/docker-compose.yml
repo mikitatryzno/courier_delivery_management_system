@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database (Production)
+  postgres:
+    image: postgres:15-alpine
+    container_name: courier_postgres
+    environment:
+      POSTGRES_USER: courier_user
+      POSTGRES_PASSWORD: courier_password
+      POSTGRES_DB: courier_delivery
+      POSTGRES_INITDB_ARGS: "--encoding=UTF-8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - courier_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U courier_user -d courier_delivery"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # pgAdmin (Database Management UI)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: courier_pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@courier.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+    networks:
+      - courier_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: courier_backend
+    environment:
+      - ENVIRONMENT=production
+      - POSTGRES_SERVER=postgres
+      - POSTGRES_USER=courier_user
+      - POSTGRES_PASSWORD=courier_password
+      - POSTGRES_DB=courier_delivery
+      - POSTGRES_PORT=5432
+      - SECRET_KEY=your-production-secret-key-change-this
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    networks:
+      - courier_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: >
+      sh -c "
+        python -m alembic upgrade head &&
+        python -m src.utils.db_cli init &&
+        uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload
+      "
+
+  # Frontend
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: courier_frontend
+    ports:
+      - "3000:80"
+    networks:
+      - courier_network
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  pgadmin_data:
+
+networks:
+  courier_network:
+    driver: bridge

@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+
+jobs:
+  backend-tests:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build backend image
+        run: |
+          docker build -t courier-backend:ci -f backend/Dockerfile backend
+      - name: Run backend tests
+        run: |
+          docker run --rm -w /app courier-backend:ci pytest -q
+
+  frontend-tests:
+    name: Frontend smoke test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+      - name: Install frontend deps
+        working-directory: frontend
+        run: |
+          npm ci --legacy-peer-deps
+      - name: Run frontend smoke test
+        working-directory: frontend
+        run: |
+          npm test -- src/tests/smoke.test.tsx -- --run --silent
