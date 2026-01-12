@@ -187,16 +187,3 @@ Communication system between all parties
 Mobile-responsive interface for courier field operations
 Delivery confirmation with digital signatures/photos
 Comprehensive reporting and analytics
-Non-Functional Requirements
-Performance: System should handle 1000+ concurrent users
-Availability: 99.5% uptime during business hours
-Security: Encrypted data transmission and secure authentication
-Usability: Intuitive interface requiring minimal training
-Scalability: Architecture should support business growth
-Compatibility: Works on modern web browsers and mobile devices
-Success Metrics
-Delivery Success Rate: >95% successful first-attempt deliveries
-User Satisfaction: >4.5/5 average rating from all user types
-System Adoption: >80% of deliveries processed through the system
-Response Time: <2 seconds average page load time
-Issue Resolution: <24 hours average resolution time for delivery problems
